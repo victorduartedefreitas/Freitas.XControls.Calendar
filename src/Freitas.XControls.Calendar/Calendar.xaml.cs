@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
 namespace Freitas.XControls.Calendar
 {
-	[XamlCompilation(XamlCompilationOptions.Compile)]
+    [XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class Calendar : ContentView
     {
         #region Constructors
@@ -17,6 +15,7 @@ namespace Freitas.XControls.Calendar
         public Calendar()
         {
             InitializeComponent();
+            InitializeGestures();
             BuildCalendar();
         }
 
@@ -41,7 +40,6 @@ namespace Freitas.XControls.Calendar
         public class CalendarPredefinedDate
         {
             public DateTime Date { get; set; }
-            public bool IsEnabled { get; set; }
             public Color? FontColor { get; set; }
         }
 
@@ -70,6 +68,11 @@ namespace Freitas.XControls.Calendar
 
         private IList<Month> _allMonths;
         private IList<int> _allYears;
+
+        private TapGestureRecognizer dayLabelTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 1 };
+        private TapGestureRecognizer dayLabelDoubleTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 2 };
+
+        private bool _isInternalChangingDisplayMonthAndYear = false;
 
         #endregion
 
@@ -178,16 +181,18 @@ namespace Freitas.XControls.Calendar
 
         #region Private Methods
 
+        private void InitializeGestures()
+        {
+            dayLabelTapGesture.Tapped += OnDayLabelSingleTapped;
+            dayLabelDoubleTapGesture.Tapped += OnDayLabelDoubleTapped;
+        }
+
         private void ClearCalendar()
         {
-            foreach (var control in CalendarGrid.Children)
+            var allDayLabels = CalendarGrid.Children.Where(f => f is DayLabel).ToList();
+            foreach (var dayLabel in allDayLabels)
             {
-                if (control is DayLabel label)
-                {
-                    label.Text = string.Empty;
-                    label.BackgroundColor = Color.LightGray;
-                    label.Date = null;
-                }
+                CalendarGrid.Children.Remove(dayLabel);
             }
         }
 
@@ -255,7 +260,6 @@ namespace Freitas.XControls.Calendar
                 Text = date.HasValue ? date.Value.Day.ToString() : string.Empty,
                 FontSize = Device.GetNamedSize(NamedSize.Small, typeof(Label)),
                 TextColor = item != null && item.FontColor.HasValue ? (Color)item.FontColor.Value : CalendarDefaultFontColor,
-                IsEnabled = item != null ? item.IsEnabled : true,
                 HorizontalOptions = LayoutOptions.FillAndExpand,
                 VerticalOptions = LayoutOptions.FillAndExpand,
                 HorizontalTextAlignment = TextAlignment.Center,
@@ -264,12 +268,6 @@ namespace Freitas.XControls.Calendar
 
             if (date.HasValue)
             {
-                var dayLabelTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 1 };
-                dayLabelTapGesture.Tapped += OnDayLabelSingleTapped;
-
-                var dayLabelDoubleTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 2 };
-                dayLabelDoubleTapGesture.Tapped += OnDayLabelDoubleTapped;
-
                 dayLabel.GestureRecognizers.Add(dayLabelTapGesture);
                 dayLabel.GestureRecognizers.Add(dayLabelDoubleTapGesture);
             }
@@ -282,12 +280,12 @@ namespace Freitas.XControls.Calendar
             if (IsDateInSelectedDates(date))
                 return;
 
-            DayLabel label = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
+            DayLabel dayLabel = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
 
-            if (label == null)
+            if (dayLabel == null)
                 return;
 
-            label.IsSelected = true;
+            dayLabel.IsSelected = true;
             SelectedDates.Add(date);
         }
 
@@ -296,12 +294,12 @@ namespace Freitas.XControls.Calendar
             if (!IsDateInSelectedDates(date))
                 return;
 
-            DayLabel label = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
+            DayLabel dayLabel = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
 
-            if (label == null)
+            if (dayLabel == null)
                 return;
 
-            label.IsSelected = false;
+            dayLabel.IsSelected = false;
             SelectedDates.Remove(date);
         }
 
@@ -310,10 +308,7 @@ namespace Freitas.XControls.Calendar
             if (!SelectedDates.Any())
                 return;
 
-            List<DateTime> datesToRemove = new List<DateTime>();
-
-            foreach (var selected in SelectedDates)
-                datesToRemove.Add(selected.Date);
+            List<DateTime> datesToRemove = new List<DateTime>(SelectedDates);
 
             foreach (var d in datesToRemove)
                 RemoveSelectedDate(d);
@@ -324,55 +319,52 @@ namespace Freitas.XControls.Calendar
             return SelectedDates.FirstOrDefault(f => f == date) != DateTime.MinValue;
         }
 
+        private void HandleSingleSelection(DateTime date)
+        {
+            bool existentDate = IsDateInSelectedDates(date);
+            ClearAllSelectedDates();
+
+            if (!existentDate)
+                AddSelectedDate(date);
+        }
+
+        private void HandleMultipleSelection(DateTime date)
+        {
+            if (!IsDateInSelectedDates(date))
+                AddSelectedDate(date);
+            else
+                RemoveSelectedDate(date);
+        }
+
+        private void HandleSpanSelection(DateTime date)
+        {
+            if (!SelectedDates.Any())
+                AddSelectedDate(date);
+            else
+            {
+                var firstDate = SelectedDates[0];
+                ClearAllSelectedDates();
+                if (date > firstDate)
+                    for (DateTime d = firstDate; d <= date; d = d.AddDays(1))
+                        AddSelectedDate(d);
+                else if (date < firstDate)
+                    for (DateTime d = date; d <= firstDate; d = d.AddDays(1))
+                        AddSelectedDate(d);
+            }
+        }
+
         private void HandleSelectedDate(DateTime date)
         {
             switch (SelectionMode)
             {
                 case CalendarSelectionMode.Single:
-                    if (IsDateInSelectedDates(date))
-                    {
-                        ClearAllSelectedDates();
-                    }
-                    else
-                    {
-                        ClearAllSelectedDates();
-                        AddSelectedDate(date);
-                    }
+                    HandleSingleSelection(date);
                     break;
                 case CalendarSelectionMode.Multiple:
-                    if (!IsDateInSelectedDates(date))
-                    {
-                        AddSelectedDate(date);
-                    }
-                    else
-                    {
-                        RemoveSelectedDate(date);
-                    }
+                    HandleMultipleSelection(date);
                     break;
                 case CalendarSelectionMode.Span:
-                    if (!SelectedDates.Any())
-                    {
-                        AddSelectedDate(date);
-                    }
-                    else
-                    {
-                        var firstDate = SelectedDates[0];
-                        ClearAllSelectedDates();
-                        if (date > firstDate)
-                        {
-                            for (DateTime d = firstDate; d <= date; d = d.AddDays(1))
-                            {
-                                AddSelectedDate(d);
-                            }
-                        }
-                        else if (date < firstDate)
-                        {
-                            for (DateTime d = date; d <= firstDate; d = d.AddDays(1))
-                            {
-                                AddSelectedDate(d);
-                            }
-                        }
-                    }
+                    HandleSpanSelection(date);
                     break;
             }
         }
@@ -394,12 +386,16 @@ namespace Freitas.XControls.Calendar
 
         private static void OnDisplayMonthChanged(BindableObject bindable, object oldValue, object newValue)
         {
-            ((Calendar)bindable).BuildCalendar();
+            var control = (Calendar)bindable;
+            if (!control._isInternalChangingDisplayMonthAndYear)
+                control.BuildCalendar();
         }
 
         private static void OnDisplayYearChanged(BindableObject bindable, object oldValue, object newValue)
         {
-            ((Calendar)bindable).BuildCalendar();
+            var control = (Calendar)bindable;
+            if (!control._isInternalChangingDisplayMonthAndYear)
+                control.BuildCalendar();
         }
 
         private static void OnSelectedDatesChanged(BindableObject bindable, object oldValue, object newValue)
@@ -425,13 +421,62 @@ namespace Freitas.XControls.Calendar
         private void OnDayLabelSingleTapped(object sender, EventArgs e)
         {
             var label = (DayLabel)sender;
-            HandleSelectedDate(label.Date.Value);
+            if (SelectionMode != CalendarSelectionMode.None)
+                HandleSelectedDate(label.Date.Value);
+            else
+                OnDayLabelDoubleTapCommand?.Execute(label.Date);
         }
 
         private void OnDayLabelDoubleTapped(object sender, EventArgs e)
         {
             var label = (DayLabel)sender;
             OnDayLabelDoubleTapCommand?.Execute(label.Date);
+        }
+
+        private void PreviousMonth()
+        {
+            _isInternalChangingDisplayMonthAndYear = true;
+            if (DisplayMonth.Code == 1)
+            {
+                DisplayMonth = AllMonths[11];
+                DisplayYear--;
+            }
+            else
+            {
+                DisplayMonth = AllMonths.First(f => f.Code == DisplayMonth.Code - 1);
+            }
+
+            BuildCalendar();
+
+            _isInternalChangingDisplayMonthAndYear = false;
+        }
+
+        private void NextMonth()
+        {
+            _isInternalChangingDisplayMonthAndYear = true;
+            if (DisplayMonth.Code == 12)
+            {
+                DisplayMonth = AllMonths[0];
+                DisplayYear++;
+            }
+            else
+            {
+                DisplayMonth = AllMonths.First(f => f.Code == DisplayMonth.Code + 1);
+            }
+
+            BuildCalendar();
+
+            _isInternalChangingDisplayMonthAndYear = false;
+        }
+
+        private void NextMonthTapLabelGestureRecognizer_Tapped(object sender, EventArgs e)
+        {
+            NextMonth();
+        }
+
+        private void PreviousMonthLabelTapGestureRecognizer_Tapped(object sender, EventArgs e)
+        {
+            PreviousMonth();
         }
 
         #endregion
