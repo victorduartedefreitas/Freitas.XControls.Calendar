@@ -1,10 +1,9 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Windows.Input;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -58,9 +57,9 @@ namespace Freitas.XControls.Calendar
                 {
                     _isSelected = value;
                     if (_isSelected)
-                        BackgroundColor = Color.White;
-                    else
                         BackgroundColor = Color.LightSkyBlue;
+                    else
+                        BackgroundColor = Color.White;
                 }
             }
         }
@@ -157,10 +156,10 @@ namespace Freitas.XControls.Calendar
             set => SetValue(CalendarDefaultFontColorProperty, value);
         }
 
-        public DelegateCommand<DateTime?> OnDayLabelClickCommand
+        public ICommand OnDayLabelDoubleTapCommand
         {
-            get => (DelegateCommand<DateTime?>)GetValue(OnDayLabelClickCommandProperty);
-            set => SetValue(OnDayLabelClickCommandProperty, value);
+            get => (ICommand)GetValue(OnDayLabelDoubleTapCommandProperty);
+            set => SetValue(OnDayLabelDoubleTapCommandProperty, value);
         }
 
         #endregion
@@ -173,7 +172,7 @@ namespace Freitas.XControls.Calendar
         public static BindableProperty SelectionModeProperty = BindableProperty.Create(nameof(SelectionMode), typeof(CalendarSelectionMode), typeof(Calendar), propertyChanged: OnSelectionModeChanged);
         public static BindableProperty PredefinedDatesProperty = BindableProperty.Create(nameof(PredefinedDates), typeof(IList<CalendarPredefinedDate>), typeof(Calendar), propertyChanged: OnPredefinedDatesChanged, defaultValueCreator: CrateDefaultValueForPredefinedDates);
         public static BindableProperty CalendarDefaultFontColorProperty = BindableProperty.Create(nameof(CalendarDefaultFontColor), typeof(Color), typeof(Calendar), propertyChanged: OnCalendarDefaultFontColorChanged, defaultValue: Color.Black);
-        public static BindableProperty OnDayLabelClickCommandProperty = BindableProperty.Create(nameof(OnDayLabelClickCommand), typeof(DelegateCommand<DateTime?>), typeof(Calendar));
+        public static BindableProperty OnDayLabelDoubleTapCommandProperty = BindableProperty.Create(nameof(OnDayLabelDoubleTapCommand), typeof(ICommand), typeof(Calendar));
 
         #endregion
 
@@ -183,9 +182,8 @@ namespace Freitas.XControls.Calendar
         {
             foreach (var control in CalendarGrid.Children)
             {
-                if (control is DayLabel)
+                if (control is DayLabel label)
                 {
-                    var label = (DayLabel)control;
                     label.Text = string.Empty;
                     label.BackgroundColor = Color.LightGray;
                     label.Date = null;
@@ -257,23 +255,31 @@ namespace Freitas.XControls.Calendar
                 Text = date.HasValue ? date.Value.Day.ToString() : string.Empty,
                 FontSize = Device.GetNamedSize(NamedSize.Small, typeof(Label)),
                 TextColor = item != null && item.FontColor.HasValue ? (Color)item.FontColor.Value : CalendarDefaultFontColor,
-                IsEnabled = item != null ? item.IsEnabled : false,
+                IsEnabled = item != null ? item.IsEnabled : true,
                 HorizontalOptions = LayoutOptions.FillAndExpand,
                 VerticalOptions = LayoutOptions.FillAndExpand,
                 HorizontalTextAlignment = TextAlignment.Center,
-                BackgroundColor = Color.White
+                IsSelected = IsDateInSelectedDates(date)
             };
 
-            var dayLabelTapGesture = new TapGestureRecognizer();
-            dayLabelTapGesture.Tapped += OnDayLabelTapped;
-            dayLabel.GestureRecognizers.Add(dayLabelTapGesture);
+            if (date.HasValue)
+            {
+                var dayLabelTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 1 };
+                dayLabelTapGesture.Tapped += OnDayLabelSingleTapped;
+
+                var dayLabelDoubleTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 2 };
+                dayLabelDoubleTapGesture.Tapped += OnDayLabelDoubleTapped;
+
+                dayLabel.GestureRecognizers.Add(dayLabelTapGesture);
+                dayLabel.GestureRecognizers.Add(dayLabelDoubleTapGesture);
+            }
 
             return dayLabel;
         }
 
         private void AddSelectedDate(DateTime date)
         {
-            if (SelectedDates.FirstOrDefault(f => f == date) != null)
+            if (IsDateInSelectedDates(date))
                 return;
 
             DayLabel label = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
@@ -287,7 +293,7 @@ namespace Freitas.XControls.Calendar
 
         private void RemoveSelectedDate(DateTime date)
         {
-            if (SelectedDates.FirstOrDefault(f => f == date) == null)
+            if (!IsDateInSelectedDates(date))
                 return;
 
             DayLabel label = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
@@ -304,8 +310,18 @@ namespace Freitas.XControls.Calendar
             if (!SelectedDates.Any())
                 return;
 
+            List<DateTime> datesToRemove = new List<DateTime>();
+
             foreach (var selected in SelectedDates)
-                RemoveSelectedDate(selected.Date);
+                datesToRemove.Add(selected.Date);
+
+            foreach (var d in datesToRemove)
+                RemoveSelectedDate(d);
+        }
+
+        private bool IsDateInSelectedDates(DateTime? date)
+        {
+            return SelectedDates.FirstOrDefault(f => f == date) != DateTime.MinValue;
         }
 
         private void HandleSelectedDate(DateTime date)
@@ -313,11 +329,25 @@ namespace Freitas.XControls.Calendar
             switch (SelectionMode)
             {
                 case CalendarSelectionMode.Single:
-                    ClearAllSelectedDates();
-                    AddSelectedDate(date);
+                    if (IsDateInSelectedDates(date))
+                    {
+                        ClearAllSelectedDates();
+                    }
+                    else
+                    {
+                        ClearAllSelectedDates();
+                        AddSelectedDate(date);
+                    }
                     break;
                 case CalendarSelectionMode.Multiple:
-                    AddSelectedDate(date);
+                    if (!IsDateInSelectedDates(date))
+                    {
+                        AddSelectedDate(date);
+                    }
+                    else
+                    {
+                        RemoveSelectedDate(date);
+                    }
                     break;
                 case CalendarSelectionMode.Span:
                     if (!SelectedDates.Any())
@@ -330,14 +360,14 @@ namespace Freitas.XControls.Calendar
                         ClearAllSelectedDates();
                         if (date > firstDate)
                         {
-                            for (DateTime d = firstDate; d <= date; date = date.AddDays(1))
+                            for (DateTime d = firstDate; d <= date; d = d.AddDays(1))
                             {
                                 AddSelectedDate(d);
                             }
                         }
                         else if (date < firstDate)
                         {
-                            for (DateTime d = date; d <= firstDate; date = date.AddDays(1))
+                            for (DateTime d = date; d <= firstDate; d = d.AddDays(1))
                             {
                                 AddSelectedDate(d);
                             }
@@ -392,17 +422,16 @@ namespace Freitas.XControls.Calendar
 
         }
 
-        #endregion
-
-        #region Public Methods
-
-        public void OnDayLabelTapped(object sender, EventArgs e)
+        private void OnDayLabelSingleTapped(object sender, EventArgs e)
         {
             var label = (DayLabel)sender;
-
             HandleSelectedDate(label.Date.Value);
+        }
 
-            OnDayLabelClickCommand?.Execute(label.Date);
+        private void OnDayLabelDoubleTapped(object sender, EventArgs e)
+        {
+            var label = (DayLabel)sender;
+            OnDayLabelDoubleTapCommand?.Execute(label.Date);
         }
 
         #endregion
