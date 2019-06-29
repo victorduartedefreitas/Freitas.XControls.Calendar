@@ -9,32 +9,54 @@
               ColumnSpacing="1" RowSpacing="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Label Grid.Row="0" Grid.Column="0"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
                    HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
-                   Text="&lt;" BackgroundColor="White" WidthRequest="40">
+                   Text="&lt;&lt;" BackgroundColor="White" WidthRequest="40"
+                   IsEnabled="{Binding PreviousYearIsEnabled, Source={x:Reference FreitasCalendar}}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="PreviousYearLabelTapGestureRecognizer_Tapped" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Grid.Row="0" Grid.Column="1"
+                   HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
+                   HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
+                   Text="&lt;" BackgroundColor="White" WidthRequest="40"
+                   IsEnabled="{Binding PreviousMonthIsEnabled, Source={x:Reference FreitasCalendar}}">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer Tapped="PreviousMonthLabelTapGestureRecognizer_Tapped" />
                 </Label.GestureRecognizers>
             </Label>
-            <Label Grid.Row="0" Grid.Column="3"
+            <Label Grid.Row="0" Grid.Column="4"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
                    HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
-                   Text="&gt;" BackgroundColor="White" WidthRequest="40">
+                   Text="&gt;" BackgroundColor="White" WidthRequest="40"
+                   IsEnabled="{Binding NextMonthIsEnabled, Source={x:Reference FreitasCalendar}}">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer Tapped="NextMonthTapLabelGestureRecognizer_Tapped" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label Grid.Row="0" Grid.Column="5"
+                   HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
+                   HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
+                   Text="&gt;&gt;" BackgroundColor="White" WidthRequest="40"
+                   IsEnabled="{Binding NextYearIsEnabled, Source={x:Reference FreitasCalendar}}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="NextYearTapLabelGestureRecognizer_Tapped" />
                 </Label.GestureRecognizers>
             </Label>
 
             <Picker x:Name="MonthPicker"
                     Title="Mês"
                     TitleColor="Red"
-                    Grid.Row="0" Grid.Column="1"
+                    Grid.Row="0" Grid.Column="2"
                     HorizontalOptions="FillAndExpand"
                     ItemsSource="{Binding AllMonths, Source={x:Reference FreitasCalendar}}"
                     ItemDisplayBinding="{Binding Name}"
@@ -44,7 +66,7 @@
             <Picker x:Name="YearPicker"
                     Title="Ano"
                     TitleColor="Red"
-                    Grid.Row="0" Grid.Column="2"
+                    Grid.Row="0" Grid.Column="3"
                     HorizontalOptions="FillAndExpand"
                     ItemsSource="{Binding AllYears, Source={x:Reference FreitasCalendar}}"
                     SelectedItem="{Binding DisplayYear, Source={x:Reference FreitasCalendar}, Mode=TwoWay}"

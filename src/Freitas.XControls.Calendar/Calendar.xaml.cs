@@ -73,10 +73,47 @@ namespace Freitas.XControls.Calendar
         private TapGestureRecognizer dayLabelDoubleTapGesture = new TapGestureRecognizer() { NumberOfTapsRequired = 2 };
 
         private bool _isInternalChangingDisplayMonthAndYear = false;
+        private int _minYear = 1900, _maxYear = 2100;
 
         #endregion
 
         #region Properties
+
+        public bool NextYearIsEnabled
+        {
+            get
+            {
+                return DisplayYear < _maxYear;
+            }
+        }
+
+        public bool PreviousYearIsEnabled
+        {
+            get
+            {
+                return DisplayYear > _minYear;
+            }
+        }
+
+        public bool PreviousMonthIsEnabled
+        {
+            get
+            {
+                return (DisplayYear == _minYear
+                        && DisplayMonth.Code > 1)
+                    || DisplayYear > _minYear;
+            }
+        }
+
+        public bool NextMonthIsEnabled
+        {
+            get
+            {
+                return (DisplayYear == _maxYear
+                        && DisplayMonth.Code < 12)
+                    || DisplayYear < _maxYear;
+            }
+        }
 
         public IList<Month> AllMonths
         {
@@ -112,7 +149,7 @@ namespace Freitas.XControls.Calendar
                 if (_allYears == null || _allYears.Count == 0)
                 {
                     _allYears = new List<int>();
-                    for (int year = 1900; year <= 2100; year++)
+                    for (int year = _minYear; year <= _maxYear; year++)
                     {
                         _allYears.Add(year);
                     }
@@ -132,13 +169,21 @@ namespace Freitas.XControls.Calendar
         public Month DisplayMonth
         {
             get { return (Month)GetValue(DisplayMonthProperty); }
-            set { SetValue(DisplayMonthProperty, value); }
+            set
+            {
+                SetValue(DisplayMonthProperty, value);
+                RaiseNextAndPreviousMonthAndYearIsEnabled();
+            }
         }
 
         public int DisplayYear
         {
             get { return (int)GetValue(DisplayYearProperty); }
-            set { SetValue(DisplayYearProperty, value); }
+            set
+            {
+                SetValue(DisplayYearProperty, value);
+                RaiseNextAndPreviousMonthAndYearIsEnabled();
+            }
         }
 
         public IList<DateTime> SelectedDates
@@ -181,6 +226,14 @@ namespace Freitas.XControls.Calendar
 
         #region Private Methods
 
+        private void RaiseNextAndPreviousMonthAndYearIsEnabled()
+        {
+            OnPropertyChanged(nameof(PreviousMonthIsEnabled));
+            OnPropertyChanged(nameof(NextMonthIsEnabled));
+            OnPropertyChanged(nameof(PreviousYearIsEnabled));
+            OnPropertyChanged(nameof(NextYearIsEnabled));
+        }
+
         private void InitializeGestures()
         {
             dayLabelTapGesture.Tapped += OnDayLabelSingleTapped;
@@ -207,7 +260,7 @@ namespace Freitas.XControls.Calendar
             int currentColumnIndex = (int)firstDayOfCurrentMonth.DayOfWeek;
 
             if (currentColumnIndex > 0)
-                AddBlankLabel(currentRowIndex, 0, currentColumnIndex - 1);
+                AddBlankLabel(currentRowIndex, currentRowIndex, 0, currentColumnIndex - 1);
 
             for (int i = 1; i <= totalDaysInMonth; i++)
             {
@@ -216,7 +269,7 @@ namespace Freitas.XControls.Calendar
             }
 
             if (currentColumnIndex > 0 && currentColumnIndex <= 6)
-                AddBlankLabel(currentRowIndex, currentColumnIndex, 6);
+                AddBlankLabel(currentRowIndex, 6, currentColumnIndex, 6);
         }
 
         private void SetCurrentRowAndColumn(ref int rowIndex, ref int columnIndex)
@@ -232,13 +285,18 @@ namespace Freitas.XControls.Calendar
             }
         }
 
-        private void AddBlankLabel(int rowIndex, int columnIndexFrom, int columnIndexTo)
+        private void AddBlankLabel(int rowIndexFrom, int rowIndexTo, int columnIndexFrom, int columnIndexTo)
         {
-            for (int i = columnIndexFrom; i <= columnIndexTo; i++)
+            for (int row = rowIndexFrom; row <= rowIndexTo; row++)
             {
-                var label = CreateDayLabel(null);
-                label.BackgroundColor = Color.LightGray;
-                CalendarGrid.Children.Add(label, i, rowIndex);
+                for (int column = columnIndexFrom; column <= columnIndexTo; column++)
+                {
+                    var label = CreateDayLabel(null);
+                    label.BackgroundColor = Color.LightGray;
+                    CalendarGrid.Children.Add(label, column, row);
+                }
+                columnIndexFrom = 0;
+                columnIndexTo = 6;
             }
         }
 
@@ -469,6 +527,18 @@ namespace Freitas.XControls.Calendar
             _isInternalChangingDisplayMonthAndYear = false;
         }
 
+        private void PreviousYear()
+        {
+            if (DisplayYear > _minYear)
+                DisplayYear--;
+        }
+
+        private void NextYear()
+        {
+            if (DisplayYear < _maxYear)
+                DisplayYear++;
+        }
+
         private void NextMonthTapLabelGestureRecognizer_Tapped(object sender, EventArgs e)
         {
             NextMonth();
@@ -477,6 +547,16 @@ namespace Freitas.XControls.Calendar
         private void PreviousMonthLabelTapGestureRecognizer_Tapped(object sender, EventArgs e)
         {
             PreviousMonth();
+        }
+
+        private void PreviousYearLabelTapGestureRecognizer_Tapped(object sender, EventArgs e)
+        {
+            PreviousYear();
+        }
+
+        private void NextYearTapLabelGestureRecognizer_Tapped(object sender, EventArgs e)
+        {
+            NextYear();
         }
 
         #endregion
