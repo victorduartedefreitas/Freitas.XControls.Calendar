@@ -10,7 +10,12 @@
     <StackLayout HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
         <freitas:Calendar HorizontalOptions="FillAndExpand"
                           VerticalOptions="FillAndExpand"
-                          SelectionMode="Multiple"/>
+                          SelectionMode="{Binding MySelectionMode}"
+                          CalendarDefaultFontColor="{Binding MyFontColor}"
+                          DisplayMonth="{Binding SelectedMonth}"
+                          DisplayYear="{Binding SelectedYear}"
+                          SelectedDates="{Binding SelectedDatesList}"
+                          OnDayLabelDoubleTapCommand="{Binding OnDayDoubleTapCommand}"/>
     </StackLayout>
 
 </ContentPage>

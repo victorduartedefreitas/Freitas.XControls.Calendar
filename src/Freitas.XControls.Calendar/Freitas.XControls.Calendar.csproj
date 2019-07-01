@@ -2,15 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.0.0.0</Version>
+    <Version>1.1.0.0</Version>
     <NeutralLanguage>en</NeutralLanguage>
-    <Description>A simple calendar control for xamarin forms app.</Description>
+    <Description>A simple calendar control for xamarin forms apps.</Description>
     <PackageProjectUrl>https://github.com/victorduartedefreitas/Freitas.XControls.Calendar</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/victorduartedefreitas/Freitas.XControls.Calendar</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/victorduartedefreitas/Freitas.XControls.Calendar</RepositoryUrl>
     <PackageTags>xamarin, xamarinforms, forms, calendar, freitas</PackageTags>
     <Authors>Victor Duarte de Freitas</Authors>
     <Company>Victor Duarte de Freitas</Company>
+    <PackageReleaseNotes>Added support for english and portuguese idioms.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,11 +22,26 @@
     <Compile Update="Calendar\Calendar.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Localization\Dictionary.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Dictionary.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Update="Calendar.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Localization\Dictionary.en-US.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Localization\Dictionary.pt-BR.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Localization\Dictionary.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Dictionary.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

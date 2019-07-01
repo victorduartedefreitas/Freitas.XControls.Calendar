@@ -15,7 +15,9 @@ namespace Freitas.XControls.Calendar
         public Calendar()
         {
             InitializeComponent();
+            Translator.Instance.Configure(Language);
             InitializeGestures();
+            InitializeDayOfWeekLabels();
             BuildCalendar();
         }
 
@@ -62,6 +64,8 @@ namespace Freitas.XControls.Calendar
             }
         }
 
+        class DayOfWeekLabel : Label { }
+
         #endregion
 
         #region Fields
@@ -74,10 +78,30 @@ namespace Freitas.XControls.Calendar
 
         private bool _isInternalChangingDisplayMonthAndYear = false;
         private int _minYear = 1900, _maxYear = 2100;
+        private CalendarLanguage _language;
 
         #endregion
 
         #region Properties
+
+        public string MonthLabelName
+        {
+            get => Translator.Instance.GetResource("Month_Label");
+        }
+        public string YearLabelName
+        {
+            get => Translator.Instance.GetResource("Year_Label");
+        }
+
+        public CalendarLanguage Language
+        {
+            get => _language;
+            set
+            {
+                _language = value;
+                ResetLanguage();
+            }
+        }
 
         public bool NextYearIsEnabled
         {
@@ -122,18 +146,18 @@ namespace Freitas.XControls.Calendar
                 if (_allMonths == null)
                 {
                     var array = new Month[] {
-                                new Month { Code = 1, Name = "Janeiro" },
-                                new Month { Code = 2, Name = "Fevereiro" },
-                                new Month { Code = 3, Name = "Março" },
-                                new Month { Code = 4, Name = "Abril" },
-                                new Month { Code = 5, Name = "Maio" },
-                                new Month { Code = 6, Name = "Junho" },
-                                new Month { Code = 7, Name = "Julho" },
-                                new Month { Code = 8, Name = "Agosto" },
-                                new Month { Code = 9, Name = "Setembro" },
-                                new Month { Code = 10, Name = "Outubro" },
-                                new Month { Code = 11, Name = "Novembro" },
-                                new Month { Code = 12, Name = "Dezembro" }};
+                                new Month { Code = 1, Name = Translator.Instance.GetResource("Month_Name_0_Jan") },
+                                new Month { Code = 2, Name = Translator.Instance.GetResource("Month_Name_1_Feb") },
+                                new Month { Code = 3, Name = Translator.Instance.GetResource("Month_Name_2_Mar") },
+                                new Month { Code = 4, Name = Translator.Instance.GetResource("Month_Name_3_Apr") },
+                                new Month { Code = 5, Name = Translator.Instance.GetResource("Month_Name_4_May") },
+                                new Month { Code = 6, Name = Translator.Instance.GetResource("Month_Name_5_Jun") },
+                                new Month { Code = 7, Name = Translator.Instance.GetResource("Month_Name_6_Jul") },
+                                new Month { Code = 8, Name = Translator.Instance.GetResource("Month_Name_7_Aug") },
+                                new Month { Code = 9, Name = Translator.Instance.GetResource("Month_Name_8_Sep") },
+                                new Month { Code = 10, Name = Translator.Instance.GetResource("Month_Name_9_Oct") },
+                                new Month { Code = 11, Name = Translator.Instance.GetResource("Month_Name_10_Nov") },
+                                new Month { Code = 12, Name = Translator.Instance.GetResource("Month_Name_11_Dec") }};
 
                     _allMonths = new List<Month>(array);
                 }
@@ -226,6 +250,39 @@ namespace Freitas.XControls.Calendar
 
         #region Private Methods
 
+        private void ResetLanguage()
+        {
+            Translator.Instance.Configure(Language);
+            InitializeDayOfWeekLabels();
+            _allMonths = null;
+            OnPropertyChanged(nameof(AllMonths));
+            DisplayMonth = AllMonths.FirstOrDefault(f => f.Code == DisplayMonth.Code);
+            OnPropertyChanged(nameof(DisplayMonth));
+            OnPropertyChanged(nameof(MonthLabelName));
+            OnPropertyChanged(nameof(YearLabelName));
+        }
+
+        private void InitializeDayOfWeekLabels()
+        {
+            var allDayOfWeekLabels = CalendarGrid.Children.Where(f => f is DayOfWeekLabel).ToList();
+            foreach (var label in allDayOfWeekLabels)
+                CalendarGrid.Children.Remove(label);
+
+            for (int day = 0; day <= 6; day++)
+            {
+                var label = new DayOfWeekLabel()
+                {
+                    FontSize = Device.GetNamedSize(NamedSize.Medium, typeof(Label)),
+                    FontAttributes = FontAttributes.Bold,
+                    BackgroundColor = Color.White,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    Text = Translator.Instance.GetResource($"DayOfWeek_NickName_{day}_{((DayOfWeek)day).ToString()}")
+                };
+
+                CalendarGrid.Children.Add(label, day, 0);
+            }
+        }
+
         private void RaiseNextAndPreviousMonthAndYearIsEnabled()
         {
             OnPropertyChanged(nameof(PreviousMonthIsEnabled));
@@ -268,7 +325,7 @@ namespace Freitas.XControls.Calendar
                 SetCurrentRowAndColumn(ref currentRowIndex, ref currentColumnIndex);
             }
 
-            if (currentColumnIndex > 0 && currentColumnIndex <= 6)
+            if (currentColumnIndex <= 6)
                 AddBlankLabel(currentRowIndex, 6, currentColumnIndex, 6);
         }
 

@@ -54,7 +54,7 @@
             </Label>
 
             <Picker x:Name="MonthPicker"
-                    Title="Mês"
+                    Title="{Binding MonthLabelName, Source={x:Reference FreitasCalendar}}"
                     TitleColor="Red"
                     Grid.Row="0" Grid.Column="2"
                     HorizontalOptions="FillAndExpand"
@@ -64,7 +64,7 @@
                     BackgroundColor="White"/>
 
             <Picker x:Name="YearPicker"
-                    Title="Ano"
+                    Title="{Binding YearLabelName, Source={x:Reference FreitasCalendar}}"
                     TitleColor="Red"
                     Grid.Row="0" Grid.Column="3"
                     HorizontalOptions="FillAndExpand"
@@ -93,28 +93,6 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            <Label Text="D" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="0" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
-            <Label Text="S" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="1" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
-            <Label Text="T" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="2" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
-            <Label Text="Q" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="3" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
-            <Label Text="Q" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="4" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
-            <Label Text="S" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="5" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
-            <Label Text="S" FontSize="Medium" FontAttributes="Bold"
-                    Grid.Row="0" Grid.Column="6" BackgroundColor="White"
-                    HorizontalTextAlignment="Center"/>
         </Grid>
     </StackLayout>
 </ContentView>
