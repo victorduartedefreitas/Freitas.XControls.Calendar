@@ -11,12 +11,12 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Label Grid.Row="0" Grid.Column="0"
+            <Label Grid.Row="0" Grid.Column="0" FontSize="Large"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
                    HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
                    Text="&lt;&lt;" BackgroundColor="White" WidthRequest="40"
@@ -25,7 +25,7 @@
                     <TapGestureRecognizer Tapped="PreviousYearLabelTapGestureRecognizer_Tapped" />
                 </Label.GestureRecognizers>
             </Label>
-            <Label Grid.Row="0" Grid.Column="1"
+            <Label Grid.Row="0" Grid.Column="1" FontSize="Large"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
                    HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
                    Text="&lt;" BackgroundColor="White" WidthRequest="40"
@@ -34,7 +34,7 @@
                     <TapGestureRecognizer Tapped="PreviousMonthLabelTapGestureRecognizer_Tapped" />
                 </Label.GestureRecognizers>
             </Label>
-            <Label Grid.Row="0" Grid.Column="4"
+            <Label Grid.Row="0" Grid.Column="4" FontSize="Large"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
                    HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
                    Text="&gt;" BackgroundColor="White" WidthRequest="40"
@@ -43,7 +43,7 @@
                     <TapGestureRecognizer Tapped="NextMonthTapLabelGestureRecognizer_Tapped" />
                 </Label.GestureRecognizers>
             </Label>
-            <Label Grid.Row="0" Grid.Column="5"
+            <Label Grid.Row="0" Grid.Column="5" FontSize="Large"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"
                    HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
                    Text="&gt;&gt;" BackgroundColor="White" WidthRequest="40"
@@ -93,6 +93,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            
+            
         </Grid>
     </StackLayout>
 </ContentView>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Freitas.XControls.Calendar.Controls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
@@ -17,6 +18,7 @@ namespace Freitas.XControls.Calendar
             InitializeComponent();
             Translator.Instance.Configure(Language);
             InitializeGestures();
+            InitializeDayLabels();
             InitializeDayOfWeekLabels();
             BuildCalendar();
         }
@@ -45,30 +47,26 @@ namespace Freitas.XControls.Calendar
             public Color? FontColor { get; set; }
         }
 
-        public class DayLabel : Label
-        {
-            public DateTime? Date { get; set; }
-
-            private bool _isSelected;
-            public bool IsSelected
-            {
-                get => _isSelected;
-                set
-                {
-                    _isSelected = value;
-                    if (_isSelected)
-                        BackgroundColor = Color.LightSkyBlue;
-                    else
-                        BackgroundColor = Color.White;
-                }
-            }
-        }
-
         class DayOfWeekLabel : Label { }
 
         #endregion
 
         #region Fields
+
+        private IList<DayLabel> allDayLabels;
+        private IList<DayLabel> AllDayLabels
+        {
+            get
+            {
+                if (allDayLabels == null)
+                {
+                    allDayLabels = new List<DayLabel>();
+                    foreach (var d in CalendarGrid.Children.Where(f => f is DayLabel))
+                        allDayLabels.Add((DayLabel)d);
+                }
+                return allDayLabels;
+            }
+        }
 
         private IList<Month> _allMonths;
         private IList<int> _allYears;
@@ -262,6 +260,24 @@ namespace Freitas.XControls.Calendar
             OnPropertyChanged(nameof(YearLabelName));
         }
 
+        private void InitializeDayLabels()
+        {
+            for (int row = 1; row <= 6; row++)
+            {
+                for (int column = 0; column <= 6; column++)
+                {
+                    var label = new DayLabel
+                    {
+                        Row = row,
+                        Column = column,
+                        Text = "0"
+                    };
+                    AllDayLabels.Add(label);
+                    CalendarGrid.Children.Add(label, column, row);
+                }
+            }
+        }
+
         private void InitializeDayOfWeekLabels()
         {
             var allDayOfWeekLabels = CalendarGrid.Children.Where(f => f is DayOfWeekLabel).ToList();
@@ -297,19 +313,8 @@ namespace Freitas.XControls.Calendar
             dayLabelDoubleTapGesture.Tapped += OnDayLabelDoubleTapped;
         }
 
-        private void ClearCalendar()
-        {
-            var allDayLabels = CalendarGrid.Children.Where(f => f is DayLabel).ToList();
-            foreach (var dayLabel in allDayLabels)
-            {
-                CalendarGrid.Children.Remove(dayLabel);
-            }
-        }
-
         private void BuildCalendar()
         {
-            ClearCalendar();
-
             int currentRowIndex = 1,
                 totalDaysInMonth = DateTime.DaysInMonth(DisplayYear, DisplayMonth.Code);
 
@@ -348,9 +353,12 @@ namespace Freitas.XControls.Calendar
             {
                 for (int column = columnIndexFrom; column <= columnIndexTo; column++)
                 {
-                    var label = CreateDayLabel(null);
+                    var label = AllDayLabels.FirstOrDefault(f => f.Row == row && f.Column == column);
+                    if (label == null)
+                        continue;
+
+                    SetDayLabel(ref label, null);
                     label.BackgroundColor = Color.LightGray;
-                    CalendarGrid.Children.Add(label, column, row);
                 }
                 columnIndexFrom = 0;
                 columnIndexTo = 6;
@@ -359,35 +367,33 @@ namespace Freitas.XControls.Calendar
 
         private void AddDayLabelToGrid(DateTime day, int rowIndex, int columnIndex)
         {
-            var label = CreateDayLabel(day);
-            CalendarGrid.Children.Add(label, columnIndex, rowIndex);
+            var label = AllDayLabels.FirstOrDefault(f => f.Row == rowIndex && f.Column == columnIndex);
+            if (label != null)
+                SetDayLabel(ref label, day);
         }
 
-        private DayLabel CreateDayLabel(DateTime? date)
+        private void SetDayLabel(ref DayLabel dayLabel, DateTime? date)
         {
             CalendarPredefinedDate item = null;
             if (date.HasValue)
                 item = PredefinedDates.FirstOrDefault(f => f.Date == date.Value);
 
-            var dayLabel = new DayLabel()
-            {
-                Date = date,
-                Text = date.HasValue ? date.Value.Day.ToString() : string.Empty,
-                FontSize = Device.GetNamedSize(NamedSize.Small, typeof(Label)),
-                TextColor = item != null && item.FontColor.HasValue ? (Color)item.FontColor.Value : CalendarDefaultFontColor,
-                HorizontalOptions = LayoutOptions.FillAndExpand,
-                VerticalOptions = LayoutOptions.FillAndExpand,
-                HorizontalTextAlignment = TextAlignment.Center,
-                IsSelected = IsDateInSelectedDates(date)
-            };
+            dayLabel.Date = date;
+            dayLabel.Text = date.HasValue ? date.Value.Day.ToString() : string.Empty;
+            dayLabel.FontSize = Device.GetNamedSize(NamedSize.Small, typeof(Label));
+            dayLabel.TextColor = item != null && item.FontColor.HasValue ? (Color)item.FontColor.Value : CalendarDefaultFontColor;
+            dayLabel.HorizontalOptions = LayoutOptions.FillAndExpand;
+            dayLabel.VerticalOptions = LayoutOptions.FillAndExpand;
+            dayLabel.HorizontalTextAlignment = TextAlignment.Center;
+            dayLabel.IsSelected = IsDateInSelectedDates(date);
 
             if (date.HasValue)
             {
+                dayLabel.GestureRecognizers.Clear();
+
                 dayLabel.GestureRecognizers.Add(dayLabelTapGesture);
                 dayLabel.GestureRecognizers.Add(dayLabelDoubleTapGesture);
             }
-
-            return dayLabel;
         }
 
         private void AddSelectedDate(DateTime date)
@@ -395,13 +401,11 @@ namespace Freitas.XControls.Calendar
             if (IsDateInSelectedDates(date))
                 return;
 
+            SelectedDates.Add(date);
             DayLabel dayLabel = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
 
-            if (dayLabel == null)
-                return;
-
-            dayLabel.IsSelected = true;
-            SelectedDates.Add(date);
+            if (dayLabel != null)
+                dayLabel.IsSelected = true;
         }
 
         private void RemoveSelectedDate(DateTime date)
@@ -409,13 +413,11 @@ namespace Freitas.XControls.Calendar
             if (!IsDateInSelectedDates(date))
                 return;
 
+            SelectedDates.Remove(date);
             DayLabel dayLabel = (DayLabel)CalendarGrid.Children.FirstOrDefault(f => f is DayLabel && ((DayLabel)f).Date == date);
 
-            if (dayLabel == null)
-                return;
-
-            dayLabel.IsSelected = false;
-            SelectedDates.Remove(date);
+            if (dayLabel != null)
+                dayLabel.IsSelected = false;
         }
 
         private void ClearAllSelectedDates()
